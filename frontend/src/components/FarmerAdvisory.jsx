@@ -1,41 +1,43 @@
 import React, { useEffect, useState } from 'react';
 
-const FarmerAdvisory = ({ farmId }) => {
-  const [data, setData] = useState(null);
+const FarmerAdvisory = ({ farmId, lang = 'hindi' }) => {
+  const [advisory, setAdvisory] = useState(null);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/advisory/${farmId}`)
+    fetch(`http://localhost:8000/api/advisory/${farmId}?lang=${lang}`)
       .then(res => res.json())
-      .then(d => setData(d));
-  }, [farmId]);
+      .then(data => setAdvisory(data));
+  }, [farmId, lang]);
 
-  if (!data) return <div>Loading advisory...</div>;
+  if (!advisory) return <div>Loading advisory...</div>;
 
   return (
-    <div className="panel advisory-panel" style={{display: 'flex', gap: '20px'}}>
-      
-      <div className="info-card" style={{flex: 1, backgroundColor: '#0b1610', borderColor: '#10b981'}}>
-        <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px'}}>
-          <div style={{background: '#10b981', padding: '5px 10px', borderRadius: '20px', color: '#fff', fontSize: '0.8rem', fontWeight: 'bold'}}>SMS / WhatsApp Output</div>
-          <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Farmer ID: FRM_9921</div>
-        </div>
-        
-        <div style={{background: '#e0f2fe', color: '#0f172a', padding: '15px', borderRadius: '12px 12px 12px 0', fontSize: '1rem', marginBottom: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.2)'}}>
-          {data.sms_hindi}
-        </div>
-        <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>
-          Translation: {data.sms_english}
+    <div style={{background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '8px', padding: '15px'}}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+          <div style={{width: '40px', height: '40px', background: '#25D366', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem'}}>📱</div>
+          <div>
+            <div style={{fontWeight: 'bold', color: 'var(--text-main)'}}>WhatsApp Alert</div>
+            <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Auto-dispatched via PM-KISAN</div>
+          </div>
         </div>
       </div>
 
-      <div className="info-card" style={{flex: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-        <div className="info-title">Yield Forecast Deviation</div>
-        <div style={{fontSize: '2.5rem', fontWeight: 'bold', color: data.yield_forecast_deviation_pct < 0 ? '#ef4444' : '#10b981', marginTop: '10px'}}>
-          {data.yield_forecast_deviation_pct}%
-        </div>
-        <div className="info-desc">From district average</div>
+      <div style={{background: '#122a22', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #25D366', fontFamily: 'sans-serif'}}>
+        <p style={{fontSize: '1rem', color: '#fff', marginBottom: '10px', lineHeight: '1.6'}}>
+          {lang === 'hindi' ? advisory.sms_hindi : lang === 'marathi' ? "शेतकरी मित्रा, तुमच्या शेतात पाण्याची तीव्र कमतरता आहे. कृपया पुढील 24 तासांत 35-45 मिमी सिंचन करा." : advisory.sms_english}
+        </p>
       </div>
 
+      <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--panel-border)', paddingTop: '15px'}}>
+        <div>
+          <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Projected Yield Impact</div>
+          <div style={{fontSize: '1.2rem', fontWeight: 'bold', color: '#ef4444'}}>
+            {advisory.yield_forecast_deviation_pct}% Deviation
+          </div>
+        </div>
+        <button className="action-btn" style={{margin: 0}}>Send via Twilio SMS</button>
+      </div>
     </div>
   );
 };
