@@ -3,6 +3,10 @@ import React from 'react';
 const Sidebar = ({ farmInfo }) => {
   if (!farmInfo) return <div className="sidebar">Loading...</div>;
 
+  const handleExport = (type) => {
+    alert(`Exporting ${type} pipeline initiated...`);
+  };
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">
@@ -15,33 +19,31 @@ const Sidebar = ({ farmInfo }) => {
           <div style={{width: 40, height: 40, backgroundColor: '#2e8b57', borderRadius: 4}}></div>
           <div>
             <div>Optical Image</div>
-            <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>({farmInfo.optical_image_status})</div>
+            <div style={{fontSize: '0.70rem', color: 'var(--text-muted)'}}>{farmInfo.optical_image_status}</div>
           </div>
         </div>
         <div className="image-status-box" style={{marginTop: 10}}>
           <div style={{width: 40, height: 40, backgroundColor: '#444', borderRadius: 4}}></div>
           <div>
             <div>Microwave Image</div>
-            <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>({farmInfo.microwave_image_status})</div>
+            <div style={{fontSize: '0.70rem', color: 'var(--text-muted)'}}>{farmInfo.microwave_image_status}</div>
+          </div>
+        </div>
+        <div className="image-status-box" style={{marginTop: 10, border: '1px dashed var(--accent)'}}>
+          <div style={{width: 40, height: 40, backgroundColor: '#0ea5e9', borderRadius: 4}}></div>
+          <div>
+            <div>NISAR Data Hub</div>
+            <div style={{fontSize: '0.70rem', color: 'var(--accent)'}}>{farmInfo.nisar_image_status}</div>
           </div>
         </div>
       </div>
 
-      <div className="menu-section">
-        <h3>2. AI ANALYSIS</h3>
-        <div className="menu-item">Preprocessing</div>
-        <div className="menu-item">Feature Extraction</div>
-        <div className="menu-item active">Crop Classification Model</div>
-        <div className="menu-item active">Moisture Stress Model</div>
-        <div className="menu-item active">Growth Stage Estimation</div>
-        <div className="menu-item">Irrigation Recommendation Model</div>
-      </div>
-
-      <div className="menu-section">
-        <h3>3. OUTPUTS</h3>
-        <div className="menu-item active">Crop Map</div>
-        <div className="menu-item active">Stress Index Map</div>
-        <div className="menu-item active">Irrigation Map</div>
+      <div className="menu-section" style={{marginTop: 'auto'}}>
+        <h3>4. INTEGRATION & EXPORT</h3>
+        <div className="action-btn" onClick={() => handleExport('GeoTIFF')}>⬇ Export GeoTIFF</div>
+        <div className="action-btn" onClick={() => handleExport('PDF Report')}>📄 PDF Summary Report</div>
+        <div className="action-btn" style={{borderColor: '#f59e0b', color: '#f59e0b'}} onClick={() => handleExport('Bhuvan Sync')}>🌐 Sync with Bhuvan</div>
+        <div className="action-btn" style={{borderColor: '#10b981', color: '#10b981'}} onClick={() => handleExport('PM-FASAL')}>✅ Push to PM-FASAL</div>
       </div>
     </div>
   );
