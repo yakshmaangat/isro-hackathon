@@ -32,6 +32,8 @@ class DashboardAnalysis(BaseModel):
     growth_map: GeoFeatureCollection
     irrigation_map: GeoFeatureCollection
     cloudy_optical_map: GeoFeatureCollection
+    predictive_stress_map: GeoFeatureCollection
+    sar_coherence_map: GeoFeatureCollection
 
 class SatelliteSchedule(BaseModel):
     satellite: str
@@ -101,3 +103,40 @@ class FarmerAdvisory(BaseModel):
     sms_hindi: str
     sms_english: str
     yield_forecast_deviation_pct: float
+    audio_url: str
+
+class CarbonSequestration(BaseModel):
+    field_id: str
+    estimated_biomass_tons: float
+    co2_equivalent_tons: float
+
+class IllegalCropDetection(BaseModel):
+    field_id: str
+    declared_crop: str
+    detected_crop: str
+    confidence: float
+    flag_status: str
+
+class WaterSourceStress(BaseModel):
+    canal_availability_pct: float
+    groundwater_depletion_trend: str
+    pump_electricity_zone: str
+    recommendation: str
+
+class FPOSummary(BaseModel):
+    fpo_name: str
+    total_farmers: int
+    collective_water_demand_m3: int
+    optimal_staggered_schedule: List[str]
+
+class PhenologyFingerprint(BaseModel):
+    crop_type: str
+    predicted_variety: str
+    confidence: float
+    lai_curve: List[float]
+
+class HistoricalCounterfactual(BaseModel):
+    event_name: str
+    stress_flagged_days_early: int
+    yield_saved_pct: float
+    hectares_protected: int

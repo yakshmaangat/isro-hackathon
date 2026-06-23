@@ -10,10 +10,7 @@ import PolicyIntegration from './components/PolicyIntegration';
 function App() {
   const [activeModule, setActiveModule] = useState('executive');
   const [season, setSeason] = useState('Kharif');
-  const [isDemoRunning, setIsDemoRunning] = useState(false);
-  const [demoStep, setDemoStep] = useState(0);
   const [dateIdx, setDateIdx] = useState(4); // Timeline state lifted to App
-
   const modules = [
     { id: 'executive', icon: '🏠', label: 'Executive Dashboard' },
     { id: 'pipeline', icon: '🛰️', label: 'Data Pipeline' },
@@ -24,34 +21,7 @@ function App() {
     { id: 'policy', icon: '🏛️', label: 'Policy & Integration' },
   ];
 
-  // The 30-Second Hackathon Winning Demo Engine
-  useEffect(() => {
-    if (!isDemoRunning) return;
-    
-    // Jump to dashboard
-    setActiveModule('executive');
 
-    const steps = [
-      { t: 0, act: () => setDateIdx(1), log: 'Simulating historical satellite pass...' },
-      { t: 3000, act: () => setDateIdx(2), log: 'Processing SAR + Optical...' },
-      { t: 6000, act: () => setDateIdx(3), log: 'Classification running...' },
-      { t: 9000, act: () => setDateIdx(4), log: 'Current Day: Stress Detected!' },
-      { t: 12000, act: () => setActiveModule('geo'), log: 'Analyzing Terrain & Boundaries...' },
-      { t: 15000, act: () => setActiveModule('ailab'), log: 'Validating Model Confidence...' },
-      { t: 18000, act: () => setActiveModule('agri'), log: 'Checking Crop Phenology & ET...' },
-      { t: 21000, act: () => setActiveModule('farmer'), log: 'Generating Multilingual SMS & Yield Impact...' },
-      { t: 25000, act: () => setActiveModule('policy'), log: 'Aggregating District Data & PM-FASAL Trigger...' },
-      { t: 29000, act: () => { setIsDemoRunning(false); setActiveModule('executive'); }, log: 'Demo Complete.' }
-    ];
-
-    const timeouts = steps.map(step => 
-      setTimeout(() => {
-        step.act();
-      }, step.t)
-    );
-
-    return () => timeouts.forEach(clearTimeout);
-  }, [isDemoRunning]);
 
   return (
     <div className="dashboard-layout">
@@ -62,15 +32,27 @@ function App() {
           Precision Ag Platform
         </div>
         
-        <div style={{padding: '10px'}}>
-          <label style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Season Toggle</label>
+        <div style={{padding: '15px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--panel-border)'}}>
+          <label style={{fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '8px'}}>🌿 Season Toggle</label>
           <select 
             value={season} 
             onChange={e => setSeason(e.target.value)}
-            style={{width: '100%', padding: '5px', background: '#333', color: '#fff', border: 'none', borderRadius: '4px', marginTop: '5px'}}
+            style={{
+              width: '100%', 
+              padding: '12px', 
+              background: '#232c38', 
+              color: '#fff', 
+              border: '1px solid #3b4b5d', 
+              borderRadius: '6px', 
+              fontSize: '1rem',
+              cursor: 'pointer',
+              fontWeight: '500',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}
           >
             <option value="Kharif">Kharif (Monsoon)</option>
             <option value="Rabi">Rabi (Winter)</option>
+            <option value="Zaid">Zaid (Summer)</option>
           </select>
         </div>
 
@@ -86,14 +68,7 @@ function App() {
           ))}
         </div>
 
-        <div style={{marginTop: 'auto', padding: '10px', textAlign: 'center'}}>
-          <button 
-            className={`demo-btn ${isDemoRunning ? 'running' : ''}`}
-            onClick={() => setIsDemoRunning(!isDemoRunning)}
-          >
-            {isDemoRunning ? 'Stop Demo' : '▶ 30-Sec Pitch Demo'}
-          </button>
-        </div>
+
       </div>
       
       {/* Module Renderer */}
@@ -102,17 +77,20 @@ function App() {
           <h1 style={{fontSize: '1.2rem', color: 'var(--accent-light)', margin: 0}}>
             {modules.find(m => m.id === activeModule)?.icon} {modules.find(m => m.id === activeModule)?.label}
           </h1>
-          {activeModule === 'executive' && (
-            <div className="timeline-scrubber">
-              <label>Temporal Scrubber:</label>
-              <input 
-                type="range" min="0" max="4" step="1" 
-                value={dateIdx} 
-                onChange={(e) => setDateIdx(parseInt(e.target.value))} 
-              />
-              <span>Date: T-{4-dateIdx} weeks</span>
-            </div>
-          )}
+          <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
+            <div id="google_translate_element"></div>
+            {activeModule === 'executive' && (
+              <div className="timeline-scrubber">
+                <label>Temporal Scrubber:</label>
+                <input 
+                  type="range" min="0" max="4" step="1" 
+                  value={dateIdx} 
+                  onChange={(e) => setDateIdx(parseInt(e.target.value))} 
+                />
+                <span>Date: T-{4-dateIdx} weeks</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {activeModule === 'executive' && <ExecutiveDashboard dateIdx={dateIdx} season={season} />}
