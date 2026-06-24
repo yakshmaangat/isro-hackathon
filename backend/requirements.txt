@@ -1,2 +1,5 @@
 fastapi
 uvicorn
+earthengine-api
+geopandas
+shapely

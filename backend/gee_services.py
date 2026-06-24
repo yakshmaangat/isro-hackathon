@@ -1,5 +1,15 @@
 import random
 import math
+import ee
+
+# Attempt to initialize Earth Engine
+GEE_AVAILABLE = False
+try:
+    ee.Initialize()
+    GEE_AVAILABLE = True
+    print("Earth Engine initialized successfully.")
+except Exception as e:
+    print(f"Warning: Earth Engine not initialized. Run 'earthengine authenticate' in the terminal. Error: {e}")
 
 def generate_grid_geojson(type_data: str, date_index: int = 4, season: str = "Kharif"):
     features = []
@@ -23,6 +33,93 @@ def generate_grid_geojson(type_data: str, date_index: int = 4, season: str = "Kh
         "Watermelon": "#f46d43", "Muskmelon": "#fdae61", "Cucumber": "#abdda4", "Bitter Gourd": "#c7e9c0", "Moong": "#d53e4f"
     }
 
+    # If GEE is available and we need crop or stress maps, run the ML pipeline
+    if GEE_AVAILABLE and type_data in ["crop"]:
+        try:
+            # 1. Create Grid FeatureCollection
+            grid_feats = []
+            for i in range(5):
+                for j in range(5):
+                    lon1, lat1 = base_lon + i * step, base_lat + j * step
+                    lon2, lat2 = lon1 + step * 0.9, lat1 + step * 0.9
+                    poly = ee.Geometry.Polygon([[[lon1, lat1], [lon2, lat1], [lon2, lat2], [lon1, lat2], [lon1, lat1]]])
+                    f = ee.Feature(poly, {"id": f"field_{i}_{j}"})
+                    grid_feats.append(f)
+            grid_fc = ee.FeatureCollection(grid_feats)
+            roi = grid_fc.geometry().bounds()
+
+            # 2. Fetch Sentinel-2 Data
+            s2 = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED") \
+                .filterBounds(roi) \
+                .filterDate('2023-01-01', '2023-12-31') \
+                .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+                .median() \
+                .clip(roi)
+
+            # 3. Compute Indices
+            ndvi = s2.normalizedDifference(['B8', 'B4']).rename('NDVI')
+            ndwi = s2.normalizedDifference(['B3', 'B8']).rename('NDWI')
+            s2_features = s2.addBands([ndvi, ndwi])
+            bands = ['B2', 'B3', 'B4', 'B8', 'NDVI', 'NDWI']
+
+            # 4. Mock Training Data for Random Forest
+            training_pts = []
+            for c_idx in range(len(crop_types)):
+                for _ in range(10): # 10 points per crop
+                    pt_lon = base_lon + random.uniform(0, 0.05)
+                    pt_lat = base_lat + random.uniform(0, 0.05)
+                    training_pts.append(ee.Feature(ee.Geometry.Point([pt_lon, pt_lat]), {'class': c_idx}))
+            training_fc = ee.FeatureCollection(training_pts)
+
+            # 5. Sample Image and Train Classifier
+            training_data = s2_features.select(bands).sampleRegions(
+                collection=training_fc,
+                properties=['class'],
+                scale=10
+            )
+            classifier = ee.Classifier.smileRandomForest(10).train(
+                features=training_data,
+                classProperty='class',
+                inputProperties=bands
+            )
+
+            # 6. Classify Image
+            classified = s2_features.select(bands).classify(classifier)
+
+            # 7. Reduce Regions over Grid (Get majority crop for each field)
+            reduced = classified.reduceRegions(
+                collection=grid_fc,
+                reducer=ee.Reducer.mode(),
+                scale=10
+            )
+
+            # 8. Convert to Python GeoJSON
+            fc_info = reduced.getInfo()
+            out_features = []
+            for feat in fc_info['features']:
+                props = feat['properties']
+                field_id = props.get('id', 'unknown')
+                class_val = int(props.get('mode', random.randint(0, len(crop_types)-1)))
+                crop = crop_types[class_val % len(crop_types)]
+                
+                out_features.append({
+                    "type": "Feature",
+                    "geometry": feat['geometry'],
+                    "properties": {
+                        "id": field_id,
+                        "value": crop,
+                        "color": crop_colors.get(crop, "#ffffff")
+                    }
+                })
+            return {"type": "FeatureCollection", "features": out_features}
+            
+        except Exception as e:
+            print(f"GEE Pipeline failed, falling back to mock: {e}")
+            # Fallback to mock data below if GEE fails (e.g. timeout)
+
+    # ---------------------------------------------------------
+    # Mock Data Logic (Fallback and for non-crop layers)
+    # ---------------------------------------------------------
     random.seed(42 + (1 if season == "Rabi" else 0))
 
     for i in range(5):
@@ -68,7 +165,7 @@ def generate_grid_geojson(type_data: str, date_index: int = 4, season: str = "Kh
                 properties["value"] = "Lodging Detected" if lodged else "Stable"
                 properties["color"] = "#ef4444" if lodged else "#10b981"
             elif type_data == "cloudy_optical":
-                is_cloudy = random.random() < (0.8 if date_index == 1 else 0.2) # High clouds on date index 1
+                is_cloudy = random.random() < (0.8 if date_index == 1 else 0.2)
                 if is_cloudy:
                     properties["value"] = "Cloud Cover"
                     properties["color"] = "#e2e8f0"
@@ -80,6 +177,7 @@ def generate_grid_geojson(type_data: str, date_index: int = 4, season: str = "Kh
 
     return {"type": "FeatureCollection", "features": features}
 
+# Other mock functions below for remaining endpoints to function
 def get_satellite_schedules():
     return [
         {"satellite": "Sentinel-1A (SAR)", "next_pass": "2026-06-25 05:30 UTC", "countdown": "1d 4h 15m", "cloud_cover_forecast": 85.0},
@@ -145,7 +243,7 @@ def get_counterfactual():
 
 def get_microwave_acoustics():
     return {
-        "cavitation_events": [12, 45, 89, 130, 210, 450, 890], # Rising trend
+        "cavitation_events": [12, 45, 89, 130, 210, 450, 890],
         "stress_prediction_days": 14,
         "signal_confidence": 0.92,
         "recommendation": "Xylem cavitation detected via C-band SAR micro-oscillations. Pre-symptomatic severe drought stress likely in 14 days."
@@ -227,10 +325,9 @@ def get_dark_fields():
 def get_humanitarian_triage():
     return {
         "farmer_id": "FARM_9921",
-        "vulnerability_score": 0.94, # Extremely vulnerable
+        "vulnerability_score": 0.94,
         "insurance_claim_verified": True,
-        "groundwater_runway": 0.5, # Half a season left
+        "groundwater_runway": 0.5,
         "triage_action": "IMMEDIATE HUMANITARIAN INTERVENTION",
         "details": "Satellite verifies 100% crop loss. Aquifer depleted. Farmer has no safety net. Route to emergency state relief fund."
     }
-

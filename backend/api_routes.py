@@ -5,7 +5,7 @@ from models import (
     SatelliteSchedule, ModelComparison, ActiveLearningQueue, EconomicImpact,
     CarbonSequestration, IllegalCropDetection, WaterSourceStress, FPOSummary, PhenologyFingerprint, HistoricalCounterfactual
 )
-from mock_data import (
+from gee_services import (
     generate_grid_geojson, get_satellite_schedules, get_model_comparisons, get_active_learning_queue,
     get_carbon_seq, get_illegal_crops, get_water_stress, get_fpo_summary, get_phenology_fingerprint, get_counterfactual,
     get_microwave_acoustics, get_quantum_unmixing, get_epigenetic_memory, get_atmospheric_river,
